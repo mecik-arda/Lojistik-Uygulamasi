@@ -1,0 +1,16 @@
+fastapi[standard]
+sqlalchemy[asyncio]
+asyncpg
+alembic
+python-jose[cryptography]
+passlib[bcrypt]
+google-auth
+google-auth-oauthlib
+google-api-python-client
+python-dotenv
+pydantic-settings
+email-validator
+google-genai
+sendgrid
+python-multipart
+httpx
