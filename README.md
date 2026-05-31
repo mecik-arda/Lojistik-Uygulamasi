@@ -67,7 +67,23 @@ LojistikAI, modern ve ölçeklenebilir bir mimari kullanılarak geliştirilmiş,
    ```
 
 ## Güvenlik Önlemleri
-Bu projede şifreleme büyük bir titizlikle ele alınmıştır. Hassas yapılandırma verileri ve API anahtarları `.env` dosyasında AES-128 (Fernet) ile şifrelenmiş olarak tutulmaktadır. Sistem çalışırken hafızada dinamik olarak çözülürler, bu sayede yetkisiz disk erişimlerinde bile anahtarlarınız güvendedir.
+
+Bu projede verilerin ve API yapılandırmalarının korunması için gelişmiş ve katmanlı güvenlik önlemleri uygulanmıştır:
+
+1.  **Hassas Verilerin Gizlenmesi (`.env` Konfigürasyonu):**
+    *   Tüm API anahtarları (Google Gemini, Gmail vb.), veritabanı yolları ve kritik yapılandırmalar projeye dahil edilmeyen (Git'e yüklenmeyen) gizli bir `.env` dosyasında tutulmaktadır.
+    *   `git push` sırasında `.gitignore` kuralı sayesinde bu gizli dosya hiçbir zaman uzak sunucuya aktarılmaz. Bu sayede API anahtarlarınız asla GitHub'da ifşa olmaz.
+
+2.  **Simetrik Şifreleme (AES-128 / Fernet):**
+    *   `.env` dosyasındaki tüm anahtarlar açık metin (plain text) olarak değil, **Fernet (AES-128)** algoritmasıyla şifrelenmiş olarak saklanır.
+    *   Sistem başlatıldığında `pydantic-settings` üzerinden yazılan özel `@field_validator` fonksiyonu ile bu veriler, sadece sistemin kendi hafızasında anlık olarak çözülür. Sunucunuza fiziksel erişim sağlayan yetkisiz bir kişi bile dosyalara baktığında sadece anlamsız şifreli metinler görür.
+
+3.  **Güvenli Veritabanı Yedekleme:**
+    *   Bakım paneli üzerinden veritabanı yedeği alındığında, mevcut `.db` dosyası anında Fernet anahtarı ile şifrelenir ve indirilebilir hale getirilir (`.enc` formatı). Şifreleme anahtarı bilinmeden bu yedeğin içeriği (kullanıcı bilgileri, lojistik verileri) asla çözülemez.
+
+4.  **Statik Kod ve Port Analizi:**
+    *   Yönetici panelindeki bakım modülü, aktif projede `eval()`, `exec()` gibi potansiyel zafiyet yaratabilecek fonksiyonların kullanımını periyodik olarak tarar.
+    *   Aynı modül arka planda socket kullanarak açık portları (`22, 80, 443, 3306` vb.) denetler ve siber güvenlik açısından zafiyet oluşturabilecek durumları raporlar.
 
 ## Lisans
 Bu proje [MIT Lisansı](LICENSE) altında lisanslanmıştır. Daha fazla bilgi için `LICENSE` dosyasına bakabilirsiniz.
