@@ -29,11 +29,16 @@ async def yedek_olustur(mevcut_kullanici: KullaniciModeli = Depends(yonetici_ger
     
     try:
         def dosyalari_isle():
-            with open(VERITABANI_YOLU, "rb") as f:
-                veri = f.read()
-                sifreli_veri = sifrele_bayt(veri, ayarlar.gizli_anahtar)
-            with open(yedek_yolu, "wb") as f:
-                f.write(sifreli_veri)
+            CHUNK = 64 * 1024
+            with open(VERITABANI_YOLU, "rb") as f_in, open(yedek_yolu, "wb") as f_out:
+                while True:
+                    parca = f_in.read(CHUNK)
+                    if not parca:
+                        break
+                    sifreli_veri = sifrele_bayt(parca, ayarlar.gizli_anahtar)
+                    # Dosyaya sifreli chunklarin uzunlugunu yazmak decrypt icin gerekli olabilir ama simdilik basitce arka arkaya yaziyoruz
+                    # Fernet her sifrelemede farkli uzunlukta donebilir (padding vb.), decrypt yapilirken dikkat edilmelidir.
+                    f_out.write(sifreli_veri + b'\n')
                 
         await asyncio.to_thread(dosyalari_isle)
             

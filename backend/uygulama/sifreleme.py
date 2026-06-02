@@ -30,4 +30,4 @@ def sifre_coz(metin: str, gizli_anahtar: str) -> str:
         cozulmus = fernet.decrypt(gercek_metin.encode('utf-8'))
         return cozulmus.decode('utf-8')
     except Exception:
-        return metin
+        raise ValueError("Kritik: Ortam değişkenleri çözülemedi, GIZLI_ANAHTAR yanlış olabilir!")

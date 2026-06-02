@@ -21,7 +21,7 @@ async def durum_getir(
     yonetici: KullaniciModeli = Depends(yonetici_gerekli),
     oturum: AsyncSession = Depends(veritabani_oturumu_al)
 ):
-    durum = await asyncio.to_thread(sistem_durumu_al)
+    durum = await sistem_durumu_al()
     
     # Son calistirma kaydini al
     sorgu = select(BakimKaydiModeli).where(
@@ -39,10 +39,11 @@ async def durum_getir(
 @bakim_yonlendirici.post("/calistir", response_model=BakimKaydiYanit)
 async def calistir(
     istek: BakimIstek,
+    background_tasks: BackgroundTasks,
     yonetici: KullaniciModeli = Depends(yonetici_gerekli),
     oturum: AsyncSession = Depends(veritabani_oturumu_al)
 ):
-    skor, kaynak, temizlik, guvenlik = await asyncio.to_thread(bakim_calistir, istek.mod)
+    skor, kaynak, temizlik, guvenlik = await bakim_calistir(istek.mod)
     
     yeni_kayit = BakimKaydiModeli(
         kullanici_id=yonetici.id,
@@ -57,12 +58,15 @@ async def calistir(
     oturum.add(yeni_kayit)
     await oturum.flush()  # ID almak icin
     
-    # PDF uret
-    pdf_yolu = await asyncio.to_thread(pdf_rapor_olustur, yeni_kayit.id, kaynak, temizlik, guvenlik)
+    # PDF yolunu önceden belirle ve DB'ye kaydet
+    pdf_yolu = os.path.join("raporlar", f"bakim_raporu_{yeni_kayit.id}.pdf")
     yeni_kayit.pdf_yolu = pdf_yolu
     
     await oturum.commit()
     await oturum.refresh(yeni_kayit)
+
+    # PDF uretimini arka plana gonder
+    background_tasks.add_task(pdf_rapor_olustur, yeni_kayit.id, kaynak, temizlik, guvenlik)
     
     return yeni_kayit
 

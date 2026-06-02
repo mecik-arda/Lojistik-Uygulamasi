@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { Mail } from '../tipler';
 
 export const apiIstemcisi = axios.create({
-  baseURL: 'http://localhost:8000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -27,8 +27,8 @@ apiIstemcisi.interceptors.response.use(
   }
 );
 
-const mailDonustur = (veri: any): Mail => {
-  if (!veri) return veri;
+const mailDonustur = (veri: Record<string, unknown>): Mail => {
+  if (!veri) return veri as unknown as Mail;
   return {
     ...veri,
     gonderenAd: veri.gonderen_ad || 'Bilinmeyen Gönderici',
@@ -52,7 +52,7 @@ export const dogalArama = async (sorgu: string) => {
   return yanit.data;
 };
 
-export const mailleriTopluIslem = async (mailIdleri: string[], islem: string, veri?: any) => {
+export const mailleriTopluIslem = async (mailIdleri: string[], islem: string, veri?: Record<string, unknown>) => {
   const yanit = await apiIstemcisi.post('/mailler/toplu-islem', { mailIdleri, islem, veri });
   return yanit.data;
 };
@@ -81,7 +81,11 @@ export const yapilandirmaGetir = async () => {
   return yanit.data;
 };
 
-export const yapilandirmaGuncelle = async (veri: any) => {
+export interface AyarlarPayload {
+  [key: string]: unknown;
+}
+
+export const yapilandirmaGuncelle = async (veri: AyarlarPayload) => {
   const yanit = await apiIstemcisi.put('/ayarlar/guncelle', veri);
   return yanit.data;
 };

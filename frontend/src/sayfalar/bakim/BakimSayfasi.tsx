@@ -76,30 +76,41 @@ export default function BakimSayfasi() {
 
   useEffect(() => {
     verileriGetir();
-    
-    // Canlı kaynak verileri için WebSocket bağlantısı
-    const ws = new WebSocket(`ws://localhost:8000/api/ws/saglik/${kullanici?.id || 'anon'}`);
-    
-    ws.onmessage = (event) => {
-      try {
-        const veri = JSON.parse(event.data);
-        if (veri.tip === 'saglik_guncellemesi') {
-          durumAyarla((onceki: any) => {
-            if (!onceki) return onceki;
-            return {
-              ...onceki,
-              cpu_kullanimi: veri.cpu,
-              ram_kullanimi: veri.ram,
-            };
-          });
+    let ws: WebSocket;
+    let reconnectTimeout: number;
+
+    const baglan = () => {
+      const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/^http/, 'ws');
+      ws = new WebSocket(`${baseUrl}/ws/saglik/${kullanici?.id || 'anon'}`);
+      
+      ws.onmessage = (event) => {
+        try {
+          const veri = JSON.parse(event.data);
+          if (veri.tip === 'saglik_guncellemesi') {
+            durumAyarla((onceki: any) => {
+              if (!onceki) return onceki;
+              return {
+                ...onceki,
+                cpu_kullanimi: veri.cpu,
+                ram_kullanimi: veri.ram,
+              };
+            });
+          }
+        } catch (err) {
+          console.error('WebSocket veri hatası:', err);
         }
-      } catch (err) {
-        console.error('WebSocket veri hatası:', err);
-      }
+      };
+
+      ws.onclose = () => {
+        reconnectTimeout = window.setTimeout(() => baglan(), 3000);
+      };
     };
-    
+
+    baglan();
+
     return () => {
-      ws.close();
+      clearTimeout(reconnectTimeout);
+      if (ws) ws.close();
     };
   }, [kullanici]);
 

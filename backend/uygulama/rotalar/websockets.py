@@ -20,7 +20,7 @@ async def saglik_websocket_uc_noktasi(websocket: WebSocket, kullanici_id: uuid.U
     await websocket.accept()
     try:
         while True:
-            cpu = psutil.cpu_percent(interval=None)
+            cpu = await asyncio.to_thread(psutil.cpu_percent, interval=None)
             ram = psutil.virtual_memory().percent
             disk = psutil.disk_usage('/').percent
             

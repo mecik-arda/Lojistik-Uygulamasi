@@ -6,11 +6,11 @@ services:
     container_name: lojistik_postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_DB: lojistik_db
       POSTGRES_USER: lojistik_admin
-      POSTGRES_PASSWORD: lojistik_sifre_2024
+      POSTGRES_PASSWORD: ${DB_SIFRESI}
     volumes:
       - postgres_veri:/var/lib/postgresql/data
 

@@ -5,14 +5,17 @@ import socket
 import tempfile
 import shutil
 from datetime import datetime
+import ast
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
-def sistem_durumu_al():
-    cpu = psutil.cpu_percent(interval=0.5)
+import asyncio
+
+async def sistem_durumu_al():
+    cpu = await asyncio.to_thread(psutil.cpu_percent, interval=0.5)
     ram = psutil.virtual_memory().percent
     
     # Basit bir saglik skoru (100 - max(cpu, ram))
@@ -163,22 +166,24 @@ def gercek_guvenlik_taramasi() -> list:
 def gercek_zararli_yazilim_taramasi() -> list:
     bulgular = []
     dizin = os.getcwd()
-    kaliplar = [b"eval(", b"exec(", b"os.system(", b"subprocess.Popen(", b"base64.b64decode("]
     
     try:
         for kok, klasorler, dosyalar in os.walk(dizin):
             if any(p in kok for p in [".git", "node_modules", ".venv", "__pycache__", "dist", "raporlar"]):
                 continue
             for dosya in dosyalar:
-                if dosya.endswith(('.py', '.js', '.ts', '.tsx', '.bat', '.sh')):
+                if dosya.endswith('.py'):
                     yol = os.path.join(kok, dosya)
                     try:
-                        with open(yol, 'rb') as f:
+                        with open(yol, 'r', encoding='utf-8') as f:
                             icerik = f.read()
-                            for kalip in kaliplar:
-                                if kalip in icerik:
+                            
+                        agac = ast.parse(icerik)
+                        for dugum in ast.walk(agac):
+                            if isinstance(dugum, ast.Call):
+                                if isinstance(dugum.func, ast.Name) and dugum.func.id in ("eval", "exec", "system", "Popen"):
                                     rel = os.path.relpath(yol, dizin)
-                                    bulgular.append(f"{rel} ({kalip.decode('utf-8').strip('(')})")
+                                    bulgular.append(f"{rel} ({dugum.func.id})")
                                     break
                     except Exception:
                         pass
@@ -186,8 +191,8 @@ def gercek_zararli_yazilim_taramasi() -> list:
         pass
     return bulgular
 
-def bakim_calistir(mod: str) -> tuple[int, dict, dict, dict]:
-    durum = sistem_durumu_al()
+async def bakim_calistir(mod: str) -> tuple[int, dict, dict, dict]:
+    durum = await sistem_durumu_al()
     cpu = durum["cpu_kullanimi"]
     ram = durum["ram_kullanimi"]
     
