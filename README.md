@@ -75,14 +75,18 @@ Bu projede verilerin ve API yapılandırmalarının korunması için gelişmiş 
     *   Tüm API anahtarları (Google Gemini, Gmail vb.), veritabanı yolları ve kritik yapılandırmalar projeye dahil edilmeyen (Git'e yüklenmeyen) gizli bir `.env` dosyasında tutulmaktadır.
     *   `git push` sırasında `.gitignore` kuralı sayesinde bu gizli dosya hiçbir zaman uzak sunucuya aktarılmaz. Bu sayede API anahtarlarınız asla GitHub'da ifşa olmaz.
 
-2.  **Simetrik Şifreleme (AES-128 / Fernet):**
+2.  **Simetrik Şifreleme (AES-128 / Fernet) ve Ortam Değişkenleri:**
     *   `.env` dosyasındaki tüm anahtarlar açık metin (plain text) olarak değil, **Fernet (AES-128)** algoritmasıyla şifrelenmiş olarak saklanır.
     *   Sistem başlatıldığında `pydantic-settings` üzerinden yazılan özel `@field_validator` fonksiyonu ile bu veriler, sadece sistemin kendi hafızasında anlık olarak çözülür. Sunucunuza fiziksel erişim sağlayan yetkisiz bir kişi bile dosyalara baktığında sadece anlamsız şifreli metinler görür.
 
-3.  **Güvenli Veritabanı Yedekleme:**
+3.  **API Anahtarı ve Yapılandırma Güvenliği İçin: AES-256 (GCM Modu):**
+    *   Google Gemini yapay zekasına bağlanmak için kullanılan hassas API anahtarının (API Key) dosya sisteminde (`data/config.json`) güvenli ve şifreli bir şekilde saklanması için **AES-256** şifrelemesi kullanılmaktadır. 
+    *   Uygulama ilk çalıştığında otomatik bir gizli anahtar (`data/secret.key`) üretilir (bu dosya sadece sunucu sahibi tarafından erişilecek şekilde `chmod 600` ile korunur) ve bu anahtar kullanılarak API anahtarı AES algoritması ile şifrelenir. Uygulama çalışma zamanında diski yormamak adına `@lru_cache` (önbellek) kullanarak bu şifreyi bellek üzerinde çözer (decrypt) ve Gemini servisine güvenle bağlanır.
+
+4.  **Güvenli Veritabanı Yedekleme:**
     *   Bakım paneli üzerinden veritabanı yedeği alındığında, mevcut `.db` dosyası anında Fernet anahtarı ile şifrelenir ve indirilebilir hale getirilir (`.enc` formatı). Şifreleme anahtarı bilinmeden bu yedeğin içeriği (kullanıcı bilgileri, lojistik verileri) asla çözülemez.
 
-4.  **Statik Kod ve Port Analizi:**
+5.  **Statik Kod ve Port Analizi:**
     *   Yönetici panelindeki bakım modülü, aktif projede `eval()`, `exec()` gibi potansiyel zafiyet yaratabilecek fonksiyonların kullanımını periyodik olarak tarar.
     *   Aynı modül arka planda socket kullanarak açık portları (`22, 80, 443, 3306` vb.) denetler ve siber güvenlik açısından zafiyet oluşturabilecek durumları raporlar.
 
