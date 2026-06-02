@@ -32,5 +32,10 @@ async def saglik_websocket_uc_noktasi(websocket: WebSocket, kullanici_id: uuid.U
             }
             await websocket.send_json(veri)
             await asyncio.sleep(1)
-    except WebSocketDisconnect:
+    except Exception:
         pass
+    finally:
+        try:
+            await websocket.close()
+        except Exception:
+            pass

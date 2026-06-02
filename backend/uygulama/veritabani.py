@@ -17,10 +17,8 @@ async def veritabani_oturumu_al():
     async with AsyncOturumFabrikasi() as oturum:
         try:
             yield oturum
-            await oturum.commit()
-        except Exception:
-            await oturum.rollback()
-            raise
+        finally:
+            await oturum.close()
 
 
 async def veritabani_olustur():

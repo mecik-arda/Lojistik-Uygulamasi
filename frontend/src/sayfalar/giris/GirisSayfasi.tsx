@@ -1,11 +1,6 @@
-import { useNavigate } from 'react-router-dom';
 import { Truck } from 'lucide-react';
-import { useYetkilendirme } from '../../baglam/YetkilendirmeBaglami';
-import { rastgeleId } from '../../yardimcilar';
 
 export default function GirisSayfasi() {
-  const { girisYap } = useYetkilendirme();
-  const yonlendir = useNavigate();
 
   const girisIsle = () => {
     window.location.href = 'http://localhost:8000/api/yetki/google/giris';

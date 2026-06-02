@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Activity } from 'lucide-react';
+import { apiIstemcisi } from '../../servisler/apiServisi';
 
 interface SaglikVerisi {
   zaman: string;
@@ -12,24 +13,39 @@ export default function SistemGrafikleri({ kullaniciId }: { kullaniciId: string 
   const [veriler, verilerAyarla] = useState<SaglikVerisi[]>([]);
 
   useEffect(() => {
-    const ws = new WebSocket(`ws://localhost:8000/api/ws/saglik/${kullaniciId}`);
+    if (!kullaniciId) return;
     
-    ws.onmessage = (olay) => {
-      const veri = JSON.parse(olay.data);
-      if (veri.tip === 'saglik_guncellemesi') {
-        const simdi = new Date();
-        const zamanMetni = `${simdi.getHours()}:${simdi.getMinutes()}:${simdi.getSeconds()}`;
-        
-        verilerAyarla((onceki) => {
-          const yeniVeri = [...onceki, { zaman: zamanMetni, cpu: veri.cpu, ram: veri.ram }];
-          if (yeniVeri.length > 20) yeniVeri.shift(); // Son 20 saniyeyi tut
-          return yeniVeri;
-        });
-      }
+    let ws: WebSocket;
+    let reconnectTimeout: ReturnType<typeof setTimeout>;
+
+    const baglan = () => {
+      const wsBase = apiIstemcisi.defaults.baseURL?.replace('http', 'ws') || 'ws://localhost:8000/api';
+      ws = new WebSocket(`${wsBase}/ws/saglik/${kullaniciId}`);
+      
+      ws.onmessage = (olay) => {
+        const veri = JSON.parse(olay.data);
+        if (veri.tip === 'saglik_guncellemesi') {
+          const simdi = new Date();
+          const zamanMetni = `${simdi.getHours()}:${simdi.getMinutes()}:${simdi.getSeconds()}`;
+          
+          verilerAyarla((onceki) => {
+            const yeniVeri = [...onceki, { zaman: zamanMetni, cpu: veri.cpu, ram: veri.ram }];
+            if (yeniVeri.length > 20) yeniVeri.shift(); // Son 20 saniyeyi tut
+            return yeniVeri;
+          });
+        }
+      };
+
+      ws.onclose = () => {
+        reconnectTimeout = setTimeout(baglan, 5000);
+      };
     };
 
+    baglan();
+
     return () => {
-      ws.close();
+      clearTimeout(reconnectTimeout);
+      if (ws) ws.close();
     };
   }, [kullaniciId]);
 

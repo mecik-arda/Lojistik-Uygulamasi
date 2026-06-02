@@ -13,6 +13,14 @@ def sifrele(metin: str, gizli_anahtar: str) -> str:
     sifreli_baytlar = fernet.encrypt(str(metin).encode('utf-8'))
     return f"enc:{sifreli_baytlar.decode('utf-8')}"
 
+def sifrele_bayt(veri: bytes, gizli_anahtar: str) -> bytes:
+    fernet = Fernet(anahtar_uret(gizli_anahtar))
+    return fernet.encrypt(veri)
+
+def sifre_coz_bayt(veri: bytes, gizli_anahtar: str) -> bytes:
+    fernet = Fernet(anahtar_uret(gizli_anahtar))
+    return fernet.decrypt(veri)
+
 def sifre_coz(metin: str, gizli_anahtar: str) -> str:
     if not metin or not str(metin).startswith("enc:"):
         return metin

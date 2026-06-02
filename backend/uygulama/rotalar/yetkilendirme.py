@@ -74,6 +74,7 @@ async def giris(
         await oturum.flush()
 
     kullanici.son_giris = datetime.now(timezone.utc)
+    await oturum.commit()
 
     erisim_tokeni = token_olustur(veri={"sub": str(kullanici.id)})
     return TokenYanit(erisim_tokeni=erisim_tokeni, token_tipi="bearer")

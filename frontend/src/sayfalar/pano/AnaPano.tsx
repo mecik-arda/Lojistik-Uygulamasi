@@ -15,7 +15,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useState, useEffect } from 'react';
 import { useYetkilendirme } from '../../baglam/YetkilendirmeBaglami';
 import { kategoriyiTurkcele, aciliyetRengi } from '../../yardimcilar';
-import type { MailKategorisi, Mail as MailTipi } from '../../tipler';
+import type { Mail as MailTipi } from '../../tipler';
 import { useNavigate } from 'react-router-dom';
 import { mailleriGetir } from '../../servisler/apiServisi';
 

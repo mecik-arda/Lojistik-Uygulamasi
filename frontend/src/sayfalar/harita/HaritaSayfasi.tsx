@@ -3,7 +3,8 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css';
 import { Truck, MapPin, Navigation } from 'lucide-react';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import { apiIstemcisi } from '../../servisler/apiServisi';
+import { useWebsocket } from '../../baglam/WebsocketBaglami';
 
 // Leaflet ikon düzeltmesi
 import L from 'leaflet';
@@ -19,21 +20,48 @@ const varsayilanIkon = L.icon({
   shadowSize: [41, 41]
 });
 
+export interface Arac {
+  id: number;
+  plaka: string;
+  surucu: string;
+  lat: number;
+  lng: number;
+  durum: string;
+  hiz: number;
+}
+
+export interface RotaNoktasi {
+  id?: number;
+  lat: number;
+  lng: number;
+  isim: string;
+}
+
 export default function HaritaSayfasi() {
-  const [araclar, araclarAyarla] = useState<any[]>([]);
-  const [rota, rotaAyarla] = useState<any[]>([]);
+  const [araclar, araclarAyarla] = useState<Arac[]>([]);
+  const [rota, rotaAyarla] = useState<RotaNoktasi[]>([]);
   const [mesafe, mesafeAyarla] = useState(0);
   const [yukleniyor, yukleniyorAyarla] = useState(true);
+  
+  const { mesajlar } = useWebsocket();
+
+  // WebSocket'ten gelen araç güncellemelerini dinle
+  useEffect(() => {
+    const sonMesaj = mesajlar[mesajlar.length - 1];
+    if (sonMesaj && sonMesaj.tur === 'arac_guncellemesi' && sonMesaj.icerik) {
+      try {
+        const guncelAraclar = JSON.parse(sonMesaj.icerik);
+        araclarAyarla(guncelAraclar);
+      } catch (e) { }
+    }
+  }, [mesajlar]);
 
   useEffect(() => {
     const verileriGetir = async () => {
       try {
-        const erisimAnahtari = localStorage.getItem('erisim_anahtari');
-        const config = { headers: { Authorization: `Bearer ${erisimAnahtari}` } };
-        
         const [aracYanit, rotaYanit] = await Promise.all([
-          axios.get('http://localhost:8000/api/harita/araclar', config),
-          axios.get('http://localhost:8000/api/harita/rota', config)
+          apiIstemcisi.get<Arac[]>('/harita/araclar'),
+          apiIstemcisi.get<{ rota: RotaNoktasi[]; toplam_mesafe_km: number }>('/harita/rota')
         ]);
         
         araclarAyarla(aracYanit.data);
@@ -47,8 +75,7 @@ export default function HaritaSayfasi() {
     };
     
     verileriGetir();
-    const aralik = setInterval(verileriGetir, 10000); // 10 saniyede bir güncelle
-    return () => clearInterval(aralik);
+    // setInterval kaldırıldı, websocket kullanılacak
   }, []);
 
   if (yukleniyor) {

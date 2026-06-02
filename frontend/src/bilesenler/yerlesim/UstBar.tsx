@@ -1,4 +1,4 @@
-import { Search, Sun, Moon, Bell, Check, X } from 'lucide-react';
+import { Search, Sun, Moon, Bell, Check } from 'lucide-react';
 import { useTema } from '../../baglam/TemaBaglami';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';

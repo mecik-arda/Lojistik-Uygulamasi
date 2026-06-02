@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { Mail } from '../tipler';
 
 export const apiIstemcisi = axios.create({
   baseURL: 'http://localhost:8000/api',
@@ -26,7 +27,7 @@ apiIstemcisi.interceptors.response.use(
   }
 );
 
-const mailDonustur = (veri: any) => {
+const mailDonustur = (veri: any): Mail => {
   if (!veri) return veri;
   return {
     ...veri,
@@ -35,7 +36,7 @@ const mailDonustur = (veri: any) => {
     aiOzeti: veri.ai_ozeti || '',
     onIzleme: veri.icerik || '',
     kategori: veri.kategori || 'bilgi_amacli',
-  };
+  } as Mail;
 };
 
 export const mailleriSenkronizeEt = async () => {
@@ -56,7 +57,7 @@ export const mailleriTopluIslem = async (mailIdleri: string[], islem: string, ve
   return yanit.data;
 };
 
-export const mailleriGetir = async () => {
+export const mailleriGetir = async (): Promise<{ mailler: Mail[] }> => {
   const yanit = await apiIstemcisi.get('/mailler');
   const veri = yanit.data;
   if (veri && Array.isArray(veri.mailler)) {

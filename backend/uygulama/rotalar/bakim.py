@@ -4,6 +4,7 @@ from sqlalchemy import select, desc
 import uuid
 from fastapi.responses import FileResponse
 import os
+import asyncio
 
 from uygulama.veritabani import veritabani_oturumu_al
 from uygulama.rotalar.yetkilendirme import mevcut_kullanici_al
@@ -20,7 +21,7 @@ async def durum_getir(
     mevcut_kullanici: KullaniciModeli = Depends(mevcut_kullanici_al),
     oturum: AsyncSession = Depends(veritabani_oturumu_al)
 ):
-    durum = sistem_durumu_al()
+    durum = await asyncio.to_thread(sistem_durumu_al)
     
     # Son calistirma kaydini al
     sorgu = select(BakimKaydiModeli).where(
@@ -41,7 +42,7 @@ async def calistir(
     mevcut_kullanici: KullaniciModeli = Depends(mevcut_kullanici_al),
     oturum: AsyncSession = Depends(veritabani_oturumu_al)
 ):
-    skor, kaynak, temizlik, guvenlik = bakim_calistir(istek.mod)
+    skor, kaynak, temizlik, guvenlik = await asyncio.to_thread(bakim_calistir, istek.mod)
     
     yeni_kayit = BakimKaydiModeli(
         kullanici_id=mevcut_kullanici.id,
@@ -57,7 +58,7 @@ async def calistir(
     await oturum.flush()  # ID almak icin
     
     # PDF uret
-    pdf_yolu = pdf_rapor_olustur(yeni_kayit.id, kaynak, temizlik, guvenlik)
+    pdf_yolu = await asyncio.to_thread(pdf_rapor_olustur, yeni_kayit.id, kaynak, temizlik, guvenlik)
     yeni_kayit.pdf_yolu = pdf_yolu
     
     await oturum.commit()
