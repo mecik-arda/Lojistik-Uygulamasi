@@ -90,5 +90,29 @@ Bu projede verilerin ve API yapılandırmalarının korunması için gelişmiş 
     *   Yönetici panelindeki bakım modülü, aktif projede `eval()`, `exec()` gibi potansiyel zafiyet yaratabilecek fonksiyonların kullanımını periyodik olarak tarar.
     *   Aynı modül arka planda socket kullanarak açık portları (`22, 80, 443, 3306` vb.) denetler ve siber güvenlik açısından zafiyet oluşturabilecek durumları raporlar.
 
+## Ekran Görüntüleri
+
+Projenin arayüzüne ait ekran görüntüleri aşağıda yer almaktadır:
+
+<p align="center">
+  <img src="ekran_goruntuleri/1.png" alt="Ekran Görüntüsü 1" width="80%" />
+</p>
+
+<p align="center">
+  <img src="ekran_goruntuleri/2.png" alt="Ekran Görüntüsü 2" width="80%" />
+</p>
+
+<p align="center">
+  <img src="ekran_goruntuleri/3.png" alt="Ekran Görüntüsü 3" width="80%" />
+</p>
+
+<p align="center">
+  <img src="ekran_goruntuleri/4.png" alt="Ekran Görüntüsü 4" width="80%" />
+</p>
+
+<p align="center">
+  <img src="ekran_goruntuleri/5.png" alt="Ekran Görüntüsü 5" width="80%" />
+</p>
+
 ## Lisans
 Bu proje [MIT Lisansı](LICENSE) altında lisanslanmıştır. Daha fazla bilgi için `LICENSE` dosyasına bakabilirsiniz.
