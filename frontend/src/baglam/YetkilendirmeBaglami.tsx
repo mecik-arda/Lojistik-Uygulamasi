@@ -19,6 +19,7 @@ export function YetkilendirmeSaglayici({ children }: { children: ReactNode }) {
     const emailAyar = localStorage.getItem('varsayilanMail') || 'demo@lojistikai.com';
     const kayitliAd = localStorage.getItem('kullaniciAdi');
     const ad = kayitliAd || emailAyar.split('@')[0];
+    const rol = (localStorage.getItem('kullaniciRol') as any) || 'Yönetici';
     return {
       id: 'usr_001',
       email: emailAyar,
@@ -26,6 +27,7 @@ export function YetkilendirmeSaglayici({ children }: { children: ReactNode }) {
       soyad: '',
       profilResmi: '',
       aktif: true,
+      rol,
     };
   };
 

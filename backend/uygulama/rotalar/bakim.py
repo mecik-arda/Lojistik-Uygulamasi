@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 import uuid
@@ -7,7 +7,7 @@ import os
 import asyncio
 
 from uygulama.veritabani import veritabani_oturumu_al
-from uygulama.rotalar.yetkilendirme import mevcut_kullanici_al
+from uygulama.rotalar.yetkilendirme import mevcut_kullanici_al, yonetici_gerekli
 from uygulama.modeller.kullanici import KullaniciModeli
 from uygulama.modeller.bakim import BakimKaydiModeli
 
@@ -18,14 +18,14 @@ bakim_yonlendirici = APIRouter(prefix="/api/bakim", tags=["Bakim"])
 
 @bakim_yonlendirici.get("/durum", response_model=BakimDurumYanit)
 async def durum_getir(
-    mevcut_kullanici: KullaniciModeli = Depends(mevcut_kullanici_al),
+    yonetici: KullaniciModeli = Depends(yonetici_gerekli),
     oturum: AsyncSession = Depends(veritabani_oturumu_al)
 ):
     durum = await asyncio.to_thread(sistem_durumu_al)
     
     # Son calistirma kaydini al
     sorgu = select(BakimKaydiModeli).where(
-        BakimKaydiModeli.kullanici_id == mevcut_kullanici.id
+        BakimKaydiModeli.kullanici_id == yonetici.id
     ).order_by(desc(BakimKaydiModeli.calistirma_tarihi)).limit(1)
     
     sonuc = await oturum.execute(sorgu)
@@ -39,13 +39,13 @@ async def durum_getir(
 @bakim_yonlendirici.post("/calistir", response_model=BakimKaydiYanit)
 async def calistir(
     istek: BakimIstek,
-    mevcut_kullanici: KullaniciModeli = Depends(mevcut_kullanici_al),
+    yonetici: KullaniciModeli = Depends(yonetici_gerekli),
     oturum: AsyncSession = Depends(veritabani_oturumu_al)
 ):
     skor, kaynak, temizlik, guvenlik = await asyncio.to_thread(bakim_calistir, istek.mod)
     
     yeni_kayit = BakimKaydiModeli(
-        kullanici_id=mevcut_kullanici.id,
+        kullanici_id=yonetici.id,
         mod=istek.mod,
         saglik_skoru=skor,
         temizlik_sonucu=temizlik,
@@ -69,12 +69,12 @@ async def calistir(
 @bakim_yonlendirici.get("/rapor/{kayit_id}")
 async def rapor_indir(
     kayit_id: uuid.UUID,
-    mevcut_kullanici: KullaniciModeli = Depends(mevcut_kullanici_al),
+    yonetici: KullaniciModeli = Depends(yonetici_gerekli),
     oturum: AsyncSession = Depends(veritabani_oturumu_al)
 ):
     sorgu = select(BakimKaydiModeli).where(
         BakimKaydiModeli.id == kayit_id,
-        BakimKaydiModeli.kullanici_id == mevcut_kullanici.id
+        BakimKaydiModeli.kullanici_id == yonetici.id
     )
     sonuc = await oturum.execute(sorgu)
     kayit = sonuc.scalar_one_or_none()

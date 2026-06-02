@@ -14,6 +14,7 @@ class KullaniciModeli(TemelModel):
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     ad: Mapped[str] = mapped_column(String(100), nullable=False)
     soyad: Mapped[str] = mapped_column(String(100), nullable=False)
+    rol: Mapped[str] = mapped_column(String(50), default="Müşteri")
     sifre_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     google_token: Mapped[str | None] = mapped_column(String(500), nullable=True)
     google_refresh_token: Mapped[str | None] = mapped_column(String(500), nullable=True)

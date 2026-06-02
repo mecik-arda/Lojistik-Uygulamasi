@@ -4,7 +4,8 @@ LojistikAI, modern ve ölçeklenebilir bir mimari kullanılarak geliştirilmiş,
 
 ## Özellikler
 
-*   **Gerçek Zamanlı Harita ve Rota Optimizasyonu:** Araçların anlık konumlarını harita (Leaflet) üzerinde görüntüleyin ve duraklar arası mesafeye göre otomatik olarak optimize edilmiş en kısa rotayı çizin.
+*   **Yapay Zeka (AI) Entegrasyonu ve Akıllı Rotalama:** Harita üzerinde Gemini API ve yapay zeka destekli akıllı teslimat süresi (ETA) tahminleri. Canlı hava durumu ve trafik simülasyonları ile desteklenmiş rota optimizasyonu (Leaflet).
+*   **Rol Tabanlı Yetkilendirme (RBAC) ve Kullanıcı Yönetimi:** Yönetici, Sürücü ve Müşteri rolleri ile JWT tabanlı güvenli kimlik doğrulama. Her kullanıcının sadece kendi yetkisi dahilindeki sayfaları (Örn: Bakım Paneli sadece Yöneticiye) ve verileri görmesini sağlayan katı rol denetimi.
 *   **Gelişmiş Sistem Bakım Paneli:** 
     *   Sistem yükünü (CPU ve RAM) WebSocket üzerinden canlı bir akış grafiği ile anlık olarak takip edin.
     *   Geçici dizinleri (%temp%, Prefetch) tek tıkla güvenle temizleyin.

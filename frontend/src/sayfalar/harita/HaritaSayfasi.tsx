@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Truck, MapPin, Navigation } from 'lucide-react';
+import { Truck, MapPin, Navigation, Clock, CloudRain, Sun, CloudSnow, Cloud, Car, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { apiIstemcisi } from '../../servisler/apiServisi';
 import { useWebsocket } from '../../baglam/WebsocketBaglami';
@@ -37,10 +37,18 @@ export interface RotaNoktasi {
   isim: string;
 }
 
+export interface AiAnalizi {
+  eta_dakika: number;
+  hava_durumu: string;
+  trafik_durumu: string;
+  ai_tavsiyesi: string;
+}
+
 export default function HaritaSayfasi() {
   const [araclar, araclarAyarla] = useState<Arac[]>([]);
   const [rota, rotaAyarla] = useState<RotaNoktasi[]>([]);
   const [mesafe, mesafeAyarla] = useState(0);
+  const [aiAnalizVerisi, aiAnalizVerisiAyarla] = useState<AiAnalizi | null>(null);
   const [yukleniyor, yukleniyorAyarla] = useState(true);
   
   const { mesajlar } = useWebsocket();
@@ -61,12 +69,15 @@ export default function HaritaSayfasi() {
       try {
         const [aracYanit, rotaYanit] = await Promise.all([
           apiIstemcisi.get<Arac[]>('/harita/araclar'),
-          apiIstemcisi.get<{ rota: RotaNoktasi[]; toplam_mesafe_km: number }>('/harita/rota')
+          apiIstemcisi.get<{ rota: RotaNoktasi[]; toplam_mesafe_km: number; ai_analizi?: AiAnalizi }>('/harita/rota')
         ]);
         
         araclarAyarla(aracYanit.data);
         rotaAyarla(rotaYanit.data.rota);
         mesafeAyarla(rotaYanit.data.toplam_mesafe_km);
+        if (rotaYanit.data.ai_analizi) {
+          aiAnalizVerisiAyarla(rotaYanit.data.ai_analizi);
+        }
       } catch (hata) {
         toast.error('Harita verileri yüklenemedi');
       } finally {
@@ -98,6 +109,41 @@ export default function HaritaSayfasi() {
           </span>
         </div>
       </div>
+
+      {aiAnalizVerisi && (
+        <div className="cam-kart p-5 flex flex-col md:flex-row gap-6 items-center justify-between animate-solma-iceri" style={{ background: 'linear-gradient(to right, rgba(59, 130, 246, 0.1), rgba(16, 185, 129, 0.1))' }}>
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-blue-500/20 rounded-full">
+              <Clock className="w-8 h-8 text-blue-400" />
+            </div>
+            <div>
+              <div className="text-sm" style={{ color: 'var(--metin-ikincil)' }}>Tahmini Varış (ETA)</div>
+              <div className="text-2xl font-bold text-white">{aiAnalizVerisi.eta_dakika} Dakika</div>
+            </div>
+          </div>
+          
+          <div className="flex gap-6 items-center">
+            <div className="flex flex-col items-center gap-1">
+              {aiAnalizVerisi.hava_durumu === 'Yağmurlu' ? <CloudRain className="w-6 h-6 text-blue-300" /> : 
+               aiAnalizVerisi.hava_durumu === 'Karlı' ? <CloudSnow className="w-6 h-6 text-white" /> :
+               aiAnalizVerisi.hava_durumu === 'Güneşli' ? <Sun className="w-6 h-6 text-yellow-400" /> :
+               <Cloud className="w-6 h-6 text-gray-300" />}
+              <span className="text-xs font-semibold" style={{ color: 'var(--metin-ikincil)' }}>{aiAnalizVerisi.hava_durumu}</span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <Car className="w-6 h-6 text-emerald-400" />
+              <span className="text-xs font-semibold" style={{ color: 'var(--metin-ikincil)' }}>{aiAnalizVerisi.trafik_durumu} Trafik</span>
+            </div>
+          </div>
+
+          <div className="flex-1 max-w-lg bg-black/20 p-3 rounded-lg border border-white/5 flex gap-3 items-start">
+            <Sparkles className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
+            <p className="text-sm italic" style={{ color: 'var(--metin-soluk)' }}>
+              {aiAnalizVerisi.ai_tavsiyesi}
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="cam-kart p-4 h-[600px] relative z-0">
         <MapContainer 

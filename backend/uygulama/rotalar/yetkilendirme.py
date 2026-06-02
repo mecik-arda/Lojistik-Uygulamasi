@@ -55,6 +55,17 @@ async def mevcut_kullanici_al(
     return kullanici
 
 
+async def yonetici_gerekli(mevcut_kullanici: KullaniciModeli = Depends(mevcut_kullanici_al)) -> KullaniciModeli:
+    if mevcut_kullanici.rol != "Yönetici":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bu işlem için Yönetici yetkisi gereklidir.")
+    return mevcut_kullanici
+
+async def surucu_gerekli(mevcut_kullanici: KullaniciModeli = Depends(mevcut_kullanici_al)) -> KullaniciModeli:
+    if mevcut_kullanici.rol not in ["Yönetici", "Sürücü"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bu işlem için Sürücü veya Yönetici yetkisi gereklidir.")
+    return mevcut_kullanici
+
+
 @yetki_yonlendirici.post("/giris", response_model=TokenYanit)
 async def giris(
     giris_verisi: KullaniciOlustur,
@@ -149,3 +160,43 @@ async def ben(
     mevcut_kullanici: KullaniciModeli = Depends(mevcut_kullanici_al),
 ):
     return mevcut_kullanici
+
+@yetki_yonlendirici.put("/kullanicilar/{kullanici_id}/rol")
+async def rol_guncelle(
+    kullanici_id: str,
+    yeni_rol: str,
+    yonetici: KullaniciModeli = Depends(yonetici_gerekli),
+    oturum: AsyncSession = Depends(veritabani_oturumu_al),
+):
+    if yeni_rol not in ["Yönetici", "Sürücü", "Müşteri"]:
+        raise HTTPException(status_code=400, detail="Geçersiz rol tipi.")
+        
+    sorgu = select(KullaniciModeli).where(KullaniciModeli.id == uuid.UUID(kullanici_id))
+    sonuc = await oturum.execute(sorgu)
+    kullanici = sonuc.scalar_one_or_none()
+    
+    if not kullanici:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı.")
+        
+    kullanici.rol = yeni_rol
+    await oturum.commit()
+    
+    return {"mesaj": f"Kullanıcı rolü başarıyla '{yeni_rol}' olarak güncellendi."}
+
+@yetki_yonlendirici.put("/ben/rol")
+async def kendi_rolumu_guncelle(
+    yeni_rol: str,
+    mevcut_kullanici: KullaniciModeli = Depends(mevcut_kullanici_al),
+    oturum: AsyncSession = Depends(veritabani_oturumu_al),
+):
+    import os
+    if os.getenv("TEST_MODU") != "1":
+        raise HTTPException(status_code=403, detail="Bu işlem sadece test ortamında kullanılabilir.")
+
+    if yeni_rol not in ["Yönetici", "Sürücü", "Müşteri"]:
+        raise HTTPException(status_code=400, detail="Geçersiz rol tipi.")
+        
+    mevcut_kullanici.rol = yeni_rol
+    await oturum.commit()
+    return {"mesaj": f"Rolünüz '{yeni_rol}' olarak güncellendi."}
+

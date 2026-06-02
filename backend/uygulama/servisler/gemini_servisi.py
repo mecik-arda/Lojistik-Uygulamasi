@@ -27,6 +27,13 @@ class DogalDilSorguSonucu(BaseModel):
     baslangic_tarihi: str | None = None
     bitis_tarihi: str | None = None
 
+class RotaAnalizSonucu(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    eta_dakika: int
+    hava_durumu: str
+    trafik_durumu: str
+    ai_tavsiyesi: str
+
 async def mail_analiz_et(metin: str) -> MailAnalizSonucu:
     if not ayarlar.gemini_api_anahtari:
         return MailAnalizSonucu(
@@ -68,3 +75,38 @@ async def dogal_dil_sorgusu_analiz_et(sorgu: str) -> DogalDilSorguSonucu:
         ),
     )
     return DogalDilSorguSonucu.model_validate_json(yanit.text)
+
+async def rota_analiz_et(mesafe_km: float, hava_durumu: str, trafik_durumu: str) -> RotaAnalizSonucu:
+    if not ayarlar.gemini_api_anahtari:
+        # Fallback if no API key is provided
+        tahmini_hiz = 40 if trafik_durumu == "Yoğun" else (80 if hava_durumu == "Güneşli" else 60)
+        tahmini_dakika = int((mesafe_km / tahmini_hiz) * 60) + (10 if hava_durumu in ["Yağmurlu", "Karlı"] else 0)
+        return RotaAnalizSonucu(
+            eta_dakika=tahmini_dakika,
+            hava_durumu=hava_durumu,
+            trafik_durumu=trafik_durumu,
+            ai_tavsiyesi="[MOCK] Hava koşulları ve trafik nedeniyle dikkatli olun."
+        )
+
+    istemci = genai.Client(api_key=ayarlar.gemini_api_anahtari)
+    sistem_komutu = "Sen bir lojistik yapay zekasısın. Verilen mesafe, hava durumu ve trafik bilgilerine dayanarak gerçekçi bir Tahmini Varış Süresi (ETA - dakika olarak) ve kısa bir sürücü tavsiyesi oluştur."
+    sorgu = f"Mesafe: {mesafe_km:.2f} km\nHava Durumu: {hava_durumu}\nTrafik Durumu: {trafik_durumu}"
+    
+    try:
+        yanit = istemci.models.generate_content(
+            model='gemini-3.5-flash',
+            contents=f"{sistem_komutu}\n{sorgu}",
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=RotaAnalizSonucu,
+            ),
+        )
+        return RotaAnalizSonucu.model_validate_json(yanit.text)
+    except Exception as e:
+        # Fallback in case of an API error
+        return RotaAnalizSonucu(
+            eta_dakika=int((mesafe_km / 60) * 60),
+            hava_durumu=hava_durumu,
+            trafik_durumu=trafik_durumu,
+            ai_tavsiyesi=f"AI sistemine ulaşılamadı. Lütfen normal hız limitlerine uyun."
+        )

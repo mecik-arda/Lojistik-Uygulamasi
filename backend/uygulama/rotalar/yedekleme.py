@@ -5,7 +5,7 @@ import asyncio
 from datetime import datetime
 from fastapi.responses import FileResponse
 
-from uygulama.rotalar.yetkilendirme import mevcut_kullanici_al
+from uygulama.rotalar.yetkilendirme import mevcut_kullanici_al, yonetici_gerekli
 from uygulama.modeller.kullanici import KullaniciModeli
 from uygulama.sifreleme import sifrele_bayt
 from uygulama.yapilandirma import ayarlar
@@ -16,7 +16,7 @@ VERITABANI_YOLU = "lojistik.db"
 YEDEK_DIZINI = "yedekler"
 
 @yedekleme_yonlendirici.post("/olustur")
-async def yedek_olustur(mevcut_kullanici: KullaniciModeli = Depends(mevcut_kullanici_al)):
+async def yedek_olustur(mevcut_kullanici: KullaniciModeli = Depends(yonetici_gerekli)):
     if not os.path.exists(VERITABANI_YOLU):
         raise HTTPException(status_code=404, detail="Veritabanı bulunamadı")
         

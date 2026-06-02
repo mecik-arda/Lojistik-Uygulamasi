@@ -8,6 +8,7 @@ class KullaniciOlustur(BaseModel):
     email: EmailStr
     ad: str
     soyad: str
+    rol: str = "Müşteri"
 
 
 class KullaniciYanit(BaseModel):
@@ -17,6 +18,7 @@ class KullaniciYanit(BaseModel):
     email: str
     ad: str
     soyad: str
+    rol: str
     profil_resmi: str | None = None
     aktif: bool
     olusturma_tarihi: datetime

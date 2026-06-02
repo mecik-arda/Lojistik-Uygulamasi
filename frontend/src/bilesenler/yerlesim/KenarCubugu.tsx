@@ -10,13 +10,14 @@ import {
   MapPin,
 } from 'lucide-react';
 import { useYetkilendirme } from '../../baglam/YetkilendirmeBaglami';
+import { kendiRolumuGuncelle } from '../../servisler/apiServisi';
 
 const menuOgeleri = [
-  { yol: '/pano', etiket: 'Gösterge Paneli', Ikon: LayoutDashboard },
-  { yol: '/harita', etiket: 'Canlı Harita', Ikon: MapPin },
-  { yol: '/mail-takip', etiket: 'Mail Takip', Ikon: Mail },
-  { yol: '/mail-gonderim', etiket: 'Mail Gönderim', Ikon: Send },
-  { yol: '/bakim', etiket: 'Bakım Paneli', Ikon: Shield },
+  { yol: '/pano', etiket: 'Gösterge Paneli', Ikon: LayoutDashboard, roller: ['Yönetici', 'Sürücü', 'Müşteri'] },
+  { yol: '/harita', etiket: 'Canlı Harita', Ikon: MapPin, roller: ['Yönetici', 'Sürücü', 'Müşteri'] },
+  { yol: '/mail-takip', etiket: 'Mail Takip', Ikon: Mail, roller: ['Yönetici'] },
+  { yol: '/mail-gonderim', etiket: 'Mail Gönderim', Ikon: Send, roller: ['Yönetici'] },
+  { yol: '/bakim', etiket: 'Bakım Paneli', Ikon: Shield, roller: ['Yönetici'] },
 ];
 
 export default function KenarCubugu() {
@@ -44,7 +45,7 @@ export default function KenarCubugu() {
       </div>
 
       <nav className="flex-1 px-4 space-y-1">
-        {menuOgeleri.map((oge) => (
+        {menuOgeleri.filter(oge => !kullanici || oge.roller.includes(kullanici.rol)).map((oge) => (
           <NavLink
             key={oge.yol}
             to={oge.yol}
@@ -100,6 +101,9 @@ export default function KenarCubugu() {
             <p className="text-sm font-semibold truncate" style={{ color: 'var(--metin-birincil)' }}>
               {kullanici ? `${kullanici.ad} ${kullanici.soyad}` : 'Kullanıcı'}
             </p>
+            <p className="text-xs truncate font-medium text-emerald-400">
+              {kullanici?.rol || 'Rol Yok'}
+            </p>
             <p className="text-xs truncate" style={{ color: 'var(--metin-soluk)' }}>
               {kullanici?.email || ''}
             </p>
@@ -108,9 +112,36 @@ export default function KenarCubugu() {
             onClick={cikisIsle}
             className="p-1.5 rounded-lg transition-colors hover:bg-red-500/10"
             style={{ color: 'var(--tehlike)' }}
+            title="Çıkış Yap"
           >
             <LogOut className="w-4 h-4" />
           </button>
+        </div>
+        
+        {/* Test Amaçlı Rol Değiştirici */}
+        <div className="mt-3 pt-3 border-t border-white/10">
+          <label className="text-[10px] uppercase font-bold tracking-wider mb-1 block" style={{ color: 'var(--metin-soluk)' }}>
+            Rolü Değiştir (Test)
+          </label>
+          <select 
+            className="w-full bg-black/20 border border-white/10 rounded-md p-1 text-xs text-white"
+            value={kullanici?.rol || 'Yönetici'}
+            onChange={async (e) => {
+              const yeni_rol = e.target.value;
+              try {
+                await kendiRolumuGuncelle(yeni_rol);
+                localStorage.setItem('kullaniciRol', yeni_rol);
+                window.dispatchEvent(new Event('kullaniciGuncellendi'));
+                window.location.reload();
+              } catch (err) {
+                console.error("Rol güncellenirken hata oluştu:", err);
+              }
+            }}
+          >
+            <option value="Yönetici">Yönetici</option>
+            <option value="Sürücü">Sürücü</option>
+            <option value="Müşteri">Müşteri</option>
+          </select>
         </div>
       </div>
     </aside>

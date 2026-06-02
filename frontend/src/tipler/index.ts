@@ -22,6 +22,7 @@ export interface Kullanici {
   soyad: string;
   profilResmi: string;
   aktif: boolean;
+  rol: 'Yönetici' | 'Sürücü' | 'Müşteri';
 }
 
 export interface Mail {

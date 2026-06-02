@@ -40,6 +40,15 @@ export default function BakimSayfasi() {
   const [modalAcik, modalAcikAyarla] = useState(false);
   const { kullanici } = useYetkilendirme();
 
+  const dosyaIndir = (url: string, dosyaAdi: string) => {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = dosyaAdi;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   const veritabaniniYedekle = async () => {
     toast.loading('Veritabanı yedekleniyor ve şifreleniyor...', { id: 'yedekleme' });
     try {
@@ -50,7 +59,7 @@ export default function BakimSayfasi() {
         { headers: { Authorization: `Bearer ${erisimAnahtari}` } }
       );
       toast.success(yanit.data.mesaj, { id: 'yedekleme' });
-      window.open(`http://localhost:8000/api/yedekleme/indir/${yanit.data.dosya}?token=${erisimAnahtari}`, '_blank');
+      dosyaIndir(`http://localhost:8000/api/yedekleme/indir/${yanit.data.dosya}?token=${erisimAnahtari}`, yanit.data.dosya);
     } catch (hata) {
       toast.error('Yedekleme sırasında hata oluştu.', { id: 'yedekleme' });
     }
@@ -67,10 +76,32 @@ export default function BakimSayfasi() {
 
   useEffect(() => {
     verileriGetir();
-    // 30 saniyede bir canli veri güncelle
-    const aralik = setInterval(verileriGetir, 30000);
-    return () => clearInterval(aralik);
-  }, []);
+    
+    // Canlı kaynak verileri için WebSocket bağlantısı
+    const ws = new WebSocket(`ws://localhost:8000/api/ws/saglik/${kullanici?.id || 'anon'}`);
+    
+    ws.onmessage = (event) => {
+      try {
+        const veri = JSON.parse(event.data);
+        if (veri.tip === 'saglik_guncellemesi') {
+          durumAyarla((onceki: any) => {
+            if (!onceki) return onceki;
+            return {
+              ...onceki,
+              cpu_kullanimi: veri.cpu,
+              ram_kullanimi: veri.ram,
+            };
+          });
+        }
+      } catch (err) {
+        console.error('WebSocket veri hatası:', err);
+      }
+    };
+    
+    return () => {
+      ws.close();
+    };
+  }, [kullanici]);
 
   const bakimBaslat = async () => {
     calisiyorAyarla(true);
@@ -90,7 +121,7 @@ export default function BakimSayfasi() {
   const raporIndir = () => {
     if (sonRaporId) {
       const erisimAnahtari = localStorage.getItem('erisim_anahtari');
-      window.open(`http://localhost:8000/api/bakim/rapor/${sonRaporId}?token=${erisimAnahtari}`, '_blank');
+      dosyaIndir(`http://localhost:8000/api/bakim/rapor/${sonRaporId}?token=${erisimAnahtari}`, `bakim_raporu_${sonRaporId}.pdf`);
     }
   };
 

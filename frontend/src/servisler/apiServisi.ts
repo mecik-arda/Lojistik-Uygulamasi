@@ -85,3 +85,8 @@ export const yapilandirmaGuncelle = async (veri: any) => {
   const yanit = await apiIstemcisi.put('/ayarlar/guncelle', veri);
   return yanit.data;
 };
+
+export const kendiRolumuGuncelle = async (yeni_rol: string) => {
+  const yanit = await apiIstemcisi.put(`/yetki/ben/rol?yeni_rol=${yeni_rol}`);
+  return yanit.data;
+};
