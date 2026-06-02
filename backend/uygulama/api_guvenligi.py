@@ -1,6 +1,8 @@
 import os
 import json
 import base64
+import stat
+from functools import lru_cache
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 
@@ -17,6 +19,10 @@ def generate_secret_key():
         key = os.urandom(32)
         with open(SECRET_KEY_PATH, "wb") as f:
             f.write(base64.b64encode(key))
+        try:
+            os.chmod(SECRET_KEY_PATH, stat.S_IRUSR | stat.S_IWUSR) # chmod 600
+        except Exception:
+            pass
 
 def get_secret_key() -> bytes:
     generate_secret_key()
@@ -51,6 +57,7 @@ def setup_config_if_needed(default_api_key: str):
         with open(CONFIG_JSON_PATH, "w", encoding="utf-8") as f:
             json.dump({"GEMINI_API_KEY": encrypted_key}, f, indent=4)
 
+@lru_cache(maxsize=1)
 def get_gemini_api_key() -> str:
     if not os.path.exists(CONFIG_JSON_PATH):
         return ""
