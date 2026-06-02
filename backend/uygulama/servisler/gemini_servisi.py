@@ -6,6 +6,13 @@ from pydantic import ConfigDict
 from google.genai import types
 
 from uygulama.yapilandirma import ayarlar
+from uygulama.api_guvenligi import setup_config_if_needed, get_gemini_api_key
+
+# AES-256 Şifreleme sistemi ile data/config.json içerisine anahtarı güvenle taşı
+setup_config_if_needed(ayarlar.gemini_api_anahtari)
+
+def _aktif_anahtar_al():
+    return get_gemini_api_key() or ayarlar.gemini_api_anahtari
 
 class KategoriEnum(str, Enum):
     siparis_talebi = "sipariş talebi"
@@ -35,7 +42,7 @@ class RotaAnalizSonucu(BaseModel):
     ai_tavsiyesi: str
 
 async def mail_analiz_et(metin: str) -> MailAnalizSonucu:
-    if not ayarlar.gemini_api_anahtari:
+    if not _aktif_anahtar_al():
         return MailAnalizSonucu(
             kategori=KategoriEnum.musteri_sikayeti,
             aciliyet_skoru=4,
@@ -43,7 +50,7 @@ async def mail_analiz_et(metin: str) -> MailAnalizSonucu:
         )
 
     try:
-        istemci = genai.Client(api_key=ayarlar.gemini_api_anahtari)
+        istemci = genai.Client(api_key=_aktif_anahtar_al())
         yanit = istemci.models.generate_content(
             model='gemini-3.5-flash',
             contents=f"Şu metni analiz et:\n{metin}",
@@ -61,10 +68,10 @@ async def mail_analiz_et(metin: str) -> MailAnalizSonucu:
         )
 
 async def dogal_dil_sorgusu_analiz_et(sorgu: str) -> DogalDilSorguSonucu:
-    if not ayarlar.gemini_api_anahtari:
+    if not _aktif_anahtar_al():
         return DogalDilSorguSonucu(kategori="müşteri şikayeti")
 
-    istemci = genai.Client(api_key=ayarlar.gemini_api_anahtari)
+    istemci = genai.Client(api_key=_aktif_anahtar_al())
     sistem_komutu = "Kullanıcı metnini SQL filtre parametrelerine (kategori, baslangic_tarihi (ISO), bitis_tarihi (ISO)) çevir."
     yanit = istemci.models.generate_content(
         model='gemini-3.5-flash',
@@ -77,7 +84,7 @@ async def dogal_dil_sorgusu_analiz_et(sorgu: str) -> DogalDilSorguSonucu:
     return DogalDilSorguSonucu.model_validate_json(yanit.text)
 
 async def rota_analiz_et(mesafe_km: float, hava_durumu: str, trafik_durumu: str) -> RotaAnalizSonucu:
-    if not ayarlar.gemini_api_anahtari:
+    if not _aktif_anahtar_al():
         # Fallback if no API key is provided
         tahmini_hiz = 40 if trafik_durumu == "Yoğun" else (80 if hava_durumu == "Güneşli" else 60)
         tahmini_dakika = int((mesafe_km / tahmini_hiz) * 60) + (10 if hava_durumu in ["Yağmurlu", "Karlı"] else 0)
@@ -88,7 +95,7 @@ async def rota_analiz_et(mesafe_km: float, hava_durumu: str, trafik_durumu: str)
             ai_tavsiyesi="[MOCK] Hava koşulları ve trafik nedeniyle dikkatli olun."
         )
 
-    istemci = genai.Client(api_key=ayarlar.gemini_api_anahtari)
+    istemci = genai.Client(api_key=_aktif_anahtar_al())
     sistem_komutu = "Sen bir lojistik yapay zekasısın. Verilen mesafe, hava durumu ve trafik bilgilerine dayanarak gerçekçi bir Tahmini Varış Süresi (ETA - dakika olarak) ve kısa bir sürücü tavsiyesi oluştur."
     sorgu = f"Mesafe: {mesafe_km:.2f} km\nHava Durumu: {hava_durumu}\nTrafik Durumu: {trafik_durumu}"
     
